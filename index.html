@@ -1,1 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Vertan</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
+    :root {
+      --bg: #080808;
+      --accent: #00ff88;
+      --accent2: #ff2d55;
+      --text: #f0f0f0;
+      --muted: #444;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      cursor: none;
+      overflow-x: hidden;
+    }
+
+    /* Custom cursor */
+    .cursor {
+      position: fixed;
+      width: 12px; height: 12px;
+      background: var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      transition: transform 0.1s ease;
+      mix-blend-mode: difference;
+    }
+    .cursor-ring {
+      position: fixed;
+      width: 36px; height: 36px;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9998;
+      transition: all 0.15s ease;
+      mix-blend-mode: difference;
+    }
+
+    /* Noise overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 100;
+      opacity: 0.4;
+    }
+
+    /* NAV */
+    nav {
+      position: fixed; top: 0; width: 100%;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.5rem 3rem;
+      z-index: 50;
+      background: linear-gradient(to bottom, #080808cc, transparent);
+    }
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 4px;
+      color: var(--accent);
+    }
+    .nav-links a {
+      color: var(--text);
+      text-decoration: none;
+      margin-left: 2rem;
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: color 0.2s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: flex-start;
+      padding: 0 3rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse at 70% 50%, #00ff8811 0%, transparent 60%),
+                  radial-gradient(ellipse at 20% 80%, #ff2d5508 0%, transparent 50%);
+    }
+    .hero-tag {
+      font-size: 0.7rem;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.2s forwards;
+    }
+    .hero h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(5rem, 14vw, 13rem);
+      line-height: 0.9;
+      letter-spacing: 2px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.4s forwards;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero-sub {
+      margin-top: 2rem;
+      font-size: 0.85rem;
+      color: #888;
+      max-width: 400px;
+      line-height: 1.8;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.6s forwards;
+    }
+    .hero-btns {
+      margin-top: 3rem;
+      display: flex; gap: 1rem;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.8s forwards;
+    }
+    .btn {
+      padding: 0.8rem 2rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      border: none;
+      cursor: none;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #000;
+    }
+    .btn-primary:hover { background: #fff; }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--muted);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* scroll indicator */
+    .scroll-hint {
+      position: absolute; bottom: 2rem; left: 3rem;
+      font-size: 0.65rem; letter-spacing: 3px;
+      color: var(--muted); text-transform: uppercase;
+      display: flex; align-items: center; gap: 1rem;
+      opacity: 0; animation: fadeUp 1s ease 1.2s forwards;
+    }
+    .scroll-hint::before {
+      content: '';
+      display: block; width: 40px; height: 1px;
+      background: var(--muted);
+    }
+
+    /* GRID LINE decoration */
+    .hero-line {
+      position: absolute; right: 3rem; top: 50%;
+      transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: 0.5rem;
+      opacity: 0; animation: fadeIn 1s ease 1s forwards;
+    }
+    .hero-line span {
+      display: block; width: 1px;
+      background: var(--muted);
+    }
+    .hero-line span:nth-child(1) { height: 80px; }
+    .hero-line span:nth-child(2) { height: 40px; background: var(--accent); }
+    .hero-line span:nth-child(3) { height: 120px; }
+
+    /* ABOUT */
+    .section {
+      padding: 8rem 3rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .section-label {
+      font-size: 0.65rem;
+      letter-spacing: 5px;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+    }
+    .section h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.5rem, 6vw, 5rem);
+      line-height: 1;
+      margin-bottom: 2rem;
+    }
+    .section p {
+      color: #888;
+      line-height: 2;
+      font-size: 0.85rem;
+      max-width: 600px;
+    }
+
+    /* CARDS */
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1px;
+      margin-top: 4rem;
+      border: 1px solid var(--muted);
+    }
+    .card {
+      padding: 2.5rem;
+      border-right: 1px solid var(--muted);
+      position: relative;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+    .card:last-child { border-right: none; }
+    .card::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, var(--accent) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .card:hover::before { opacity: 0.05; }
+    .card-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 4rem;
+      color: var(--muted);
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+    .card h3 {
+      font-size: 0.85rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+      color: var(--accent);
+    }
+    .card p { font-size: 0.8rem; color: #666; line-height: 1.8; }
+
+    /* MARQUEE */
+    .marquee-wrap {
+      border-top: 1px solid var(--muted);
+      border-bottom: 1px solid var(--muted);
+      overflow: hidden;
+      padding: 1.2rem 0;
+      margin: 4rem 0;
+    }
+    .marquee {
+      display: flex; gap: 4rem;
+      animation: marquee 18s linear infinite;
+      white-space: nowrap;
+    }
+    .marquee span {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 4px;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+    .marquee span.highlight { color: var(--accent); }
+
+    /* CONTACT */
+    .contact-section {
+      padding: 8rem 3rem;
+      text-align: center;
+      position: relative;
+    }
+    .contact-section h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(3rem, 10vw, 9rem);
+      line-height: 0.9;
+      margin-bottom: 2rem;
+    }
+    .contact-section h2 span { 
+      -webkit-text-stroke: 1px var(--text);
+      color: transparent;
+    }
+    .contact-email {
+      font-size: 0.85rem;
+      letter-spacing: 3px;
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid var(--accent);
+      padding-bottom: 2px;
+      transition: opacity 0.2s;
+    }
+    .contact-email:hover { opacity: 0.6; }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--muted);
+      padding: 2rem 3rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      color: var(--muted);
+      letter-spacing: 2px;
+    }
+
+    /* ANIMATIONS */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+
+    /* reveal on scroll */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="cursor" id="cursor"></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">Vertan</div>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#work">Work</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <p class="hero-tag">// Welcome to my space</p>
+    <h1>VERT<span>AN</span><br>78</h1>
+    <p class="hero-sub">Building cool stuff on the internet. This is my personal corner of the web — still cooking 🔥</p>
+    <div class="hero-btns">
+      <a href="#work" class="btn btn-primary">See My Work</a>
+      <a href="#contact" class="btn btn-outline">Get In Touch</a>
+    </div>
+    <div class="scroll-hint">Scroll down</div>
+    <div class="hero-line">
+      <span></span><span></span><span></span>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee-wrap">
+    <div class="marquee">
+      <span>Design</span><span class="highlight">✦</span>
+      <span>Development</span><span class="highlight">✦</span>
+      <span>Creativity</span><span class="highlight">✦</span>
+      <span>Innovation</span><span class="highlight">✦</span>
+      <span>Vibes</span><span class="highlight">✦</span>
+      <span>Design</span><span class="highlight">✦</span>
+      <span>Development</span><span class="highlight">✦</span>
+      <span>Creativity</span><span class="highlight">✦</span>
+      <span>Innovation</span><span class="highlight">✦</span>
+      <span>Vibes</span><span class="highlight">✦</span>
+    </div>
+  </div>
+
+  <!-- ABOUT -->
+  <section class="section" id="about">
+    <p class="section-label reveal">// 001 — About</p>
+    <h2 class="reveal">WHO<br>AM I?</h2>
+    <p class="reveal">Just someone who builds things on the internet and makes them look fire. Change this text to whatever you want people to know about you.</p>
+  </section>
+
+  <!-- CARDS -->
+  <div style="padding: 0 3rem 8rem; max-width: 1100px; margin: 0 auto;" id="work">
+    <p class="section-label reveal">// 002 — Work</p>
+    <h2 class="reveal" style="font-family: 'Bebas Neue', sans-serif; font-size: clamp(2.5rem,6vw,5rem);">WHAT I DO</h2>
+    <div class="cards reveal">
+      <div class="card">
+        <div class="card-num">01</div>
+        <h3>Web Design</h3>
+        <p>Making websites that actually look good and work properly.</p>
+      </div>
+      <div class="card">
+        <div class="card-num">02</div>
+        <h3>Development</h3>
+        <p>Writing code that does what it's supposed to do (most of the time).</p>
+      </div>
+      <div class="card">
+        <div class="card-num">03</div>
+        <h3>Whatever Else</h3>
+        <p>Change these cards to show your actual skills or projects.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTACT -->
+  <section class="contact-section" id="contact">
+    <p class="section-label reveal" style="text-align:center">// 003 — Contact</p>
+    <h2 class="reveal">LET'S<br><span>TALK</span></h2>
+    <a href="mailto:your@email.com" class="contact-email reveal">your@email.com</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>© 2026 Vertan78</span>
+    <span>Built with 🔥</span>
+  </footer>
+
+  <script>
+    // Custom cursor
+    const cursor = document.getElementById('cursor');
+    const ring = document.getElementById('cursorRing');
+    let mx = 0, my = 0, rx = 0, ry = 0;
+
+    document.addEventListener('mousemove', e => {
+      mx = e.clientX; my = e.clientY;
+      cursor.style.left = mx - 6 + 'px';
+      cursor.style.top = my - 6 + 'px';
+    });
+
+    function animateRing() {
+      rx += (mx - rx - 18) * 0.12;
+      ry += (my - ry - 18) * 0.12;
+      ring.style.left = rx + 'px';
+      ring.style.top = ry + 'px';
+      requestAnimationFrame(animateRing);
+    }
+    animateRing();
+
+    document.querySelectorAll('a, button, .btn').forEach(el => {
+      el.addEventListener('mouseenter', () => cursor.style.transform = 'scale(2.5)');
+      el.addEventListener('mouseleave', () => cursor.style.transform = 'scale(1)');
+    });
+
+    // Scroll reveal
+    const reveals = document.querySelectorAll('.reveal');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.15 });
+    reveals.forEach(r => observer.observe(r));
+  </script>
+</body>
+</html>
