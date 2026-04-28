@@ -1149,4 +1149,1156 @@ class SnakeGame {
 initSnakeCanvas();
 </script>
 </body>
+</html> 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AXIOM — Digital Atelier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Bebas+Neue&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #00c8d4;
+    --gold-light: #5ee8f0;
+    --gold-dim: #0090a0;
+    --ink: #f0fbfc;
+    --paper: #0d1a1c;
+    --cream: #e4f7f9;
+    --charcoal: #ffffff;
+    --muted: #4a7a80;
+    --border: rgba(0,200,212,0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--ink);
+    color: var(--paper);
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    overflow-x: hidden;
+    cursor: crosshair;
+  }
+
+  /* ===== NOISE OVERLAY ===== */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* ===== CURSOR ===== */
+  .cursor-dot {
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+    transform: translate(-50%,-50%);
+    transition: transform 0.1s;
+  }
+  .cursor-ring {
+    width: 28px; height: 28px;
+    border: 1px solid var(--gold);
+    border-radius: 50%;
+    position: fixed;
+    pointer-events: none;
+    z-index: 10000;
+    transform: translate(-50%,-50%);
+    transition: all 0.15s ease;
+    opacity: 0.6;
+  }
+
+  /* ===== NAV ===== */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 3rem;
+    background: linear-gradient(to bottom, rgba(240,251,252,0.97), transparent);
+    backdrop-filter: blur(4px);
+  }
+
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+    text-decoration: none;
+  }
+
+  .nav-links {
+    display: flex;
+    gap: 2.5rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--paper);
+    text-decoration: none;
+    opacity: 0.7;
+    transition: opacity 0.3s, color 0.3s;
+  }
+  .nav-links a:hover { opacity: 1; color: var(--gold); }
+
+  /* ===== HERO ===== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    padding: 6rem 3rem 3rem;
+    overflow: hidden;
+  }
+
+  .hero-grid-bg {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,200,212,0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,200,212,0.1) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  .hero-content {
+    text-align: center;
+    position: relative;
+    z-index: 2;
+    max-width: 900px;
+  }
+
+  .hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+  }
+  .hero-eyebrow::before,
+  .hero-eyebrow::after {
+    content: '';
+    display: block;
+    width: 50px;
+    height: 1px;
+    background: var(--gold);
+    opacity: 0.5;
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(5rem, 13vw, 11rem);
+    line-height: 0.9;
+    letter-spacing: 0.05em;
+    color: var(--paper);
+    margin-bottom: 0.5rem;
+  }
+
+  .hero-title span {
+    color: var(--gold);
+    font-style: italic;
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 300;
+    font-size: 0.7em;
+    display: block;
+    margin-top: 0.2em;
+  }
+
+  .hero-desc {
+    font-size: 1.15rem;
+    font-weight: 300;
+    font-style: italic;
+    color: rgba(13,26,28,0.55);
+    margin: 2rem auto;
+    max-width: 500px;
+    line-height: 1.8;
+  }
+
+  .hero-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--gold);
+    text-decoration: none;
+    border-bottom: 1px solid var(--gold-dim);
+    padding-bottom: 0.3rem;
+    transition: all 0.3s;
+  }
+  .hero-cta:hover { border-color: var(--gold); gap: 1.5rem; }
+
+  /* ===== SECTION SHARED ===== */
+  section { padding: 7rem 3rem; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.4em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    opacity: 0.8;
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    letter-spacing: 0.05em;
+    line-height: 1;
+    margin-bottom: 1.5rem;
+  }
+
+  .gold-line {
+    width: 60px;
+    height: 1px;
+    background: var(--gold);
+    margin: 1.5rem 0;
+  }
+
+  /* ===== SERVICES SECTION ===== */
+  .services {
+    background: var(--charcoal);
+    max-width: 100%;
+  }
+
+  .services-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 4rem;
+  }
+
+  .service-card {
+    background: var(--charcoal);
+    padding: 3rem 2.5rem;
+    position: relative;
+    transition: background 0.3s;
+    overflow: hidden;
+  }
+
+  .service-card::before {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gold);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+  .service-card:hover::before { transform: scaleX(1); }
+  .service-card:hover { background: rgba(0,200,212,0.05); }
+
+  .service-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.3em;
+    color: var(--gold-dim);
+    margin-bottom: 1.5rem;
+  }
+
+  .service-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+    color: var(--paper);
+  }
+
+  .service-desc {
+    font-size: 0.95rem;
+    font-weight: 300;
+    color: rgba(245,240,232,0.5);
+    line-height: 1.8;
+  }
+
+  /* ===== MARQUEE ===== */
+  .marquee-wrapper {
+    overflow: hidden;
+    background: var(--gold);
+    padding: 1rem 0;
+    border-top: 1px solid var(--gold-dim);
+    border-bottom: 1px solid var(--gold-dim);
+  }
+  .marquee-track {
+    display: flex;
+    gap: 3rem;
+    animation: marquee 20s linear infinite;
+    white-space: nowrap;
+    width: max-content;
+  }
+  .marquee-item {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.9rem;
+    letter-spacing: 0.3em;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+  }
+  .marquee-item::before { content: '✦'; font-size: 0.5rem; opacity: 0.6; }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ===== GAMES SECTION ===== */
+  .games-section {
+    background: var(--ink);
+  }
+
+  .games-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 4rem;
+    flex-wrap: wrap;
+    gap: 2rem;
+  }
+
+  .games-tabs {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .game-tab {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.25rem;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: rgba(245,240,232,0.5);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+  .game-tab:hover, .game-tab.active {
+    background: var(--gold);
+    color: var(--ink);
+    border-color: var(--gold);
+  }
+
+  .games-arena {
+    background: rgba(201,168,76,0.03);
+    border: 1px solid var(--border);
+    min-height: 500px;
+    display: none;
+    position: relative;
+    overflow: hidden;
+  }
+  .games-arena.active { display: block; }
+
+  /* ===== GAME 1: TYPE SPEED ===== */
+  #game-type {
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 500px;
+  }
+
+  .type-prompt {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.5rem;
+    font-style: italic;
+    font-weight: 300;
+    color: rgba(245,240,232,0.4);
+    text-align: center;
+    max-width: 600px;
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+    letter-spacing: 0.02em;
+    position: relative;
+  }
+
+  .type-chars span {
+    transition: color 0.1s;
+  }
+  .type-chars .correct { color: var(--gold); }
+  .type-chars .incorrect { color: #ff6b6b; text-decoration: underline; }
+  .type-chars .current {
+    color: var(--paper);
+    text-shadow: 0 0 8px var(--gold);
+  }
+
+  .type-input {
+    width: 100%;
+    max-width: 500px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--paper);
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    padding: 0.75rem 0;
+    outline: none;
+    text-align: center;
+    letter-spacing: 0.05em;
+  }
+  .type-input:focus { border-color: var(--gold); }
+
+  .type-stats {
+    display: flex;
+    gap: 3rem;
+    margin-top: 2rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+  }
+  .type-stats .stat-val {
+    display: block;
+    font-size: 1.5rem;
+    color: var(--gold);
+    margin-top: 0.3rem;
+  }
+
+  .game-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    padding: 0.75rem 2rem;
+    border: 1px solid var(--gold);
+    background: transparent;
+    color: var(--gold);
+    cursor: pointer;
+    transition: all 0.3s;
+    margin-top: 1.5rem;
+  }
+  .game-btn:hover { background: var(--gold); color: var(--ink); }
+
+  /* ===== GAME 2: MEMORY ===== */
+  #game-memory {
+    padding: 3rem;
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .memory-info {
+    display: flex;
+    gap: 3rem;
+    margin-bottom: 2rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .memory-info span { color: var(--gold); font-size: 1rem; }
+
+  .memory-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 80px);
+    grid-template-rows: repeat(4, 80px);
+    gap: 8px;
+  }
+
+  .mem-card {
+    width: 80px; height: 80px;
+    background: rgba(201,168,76,0.08);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    transition: all 0.35s cubic-bezier(0.4,0,0.2,1);
+    perspective: 600px;
+    transform-style: preserve-3d;
+  }
+  .mem-card.flipped, .mem-card.matched {
+    background: rgba(201,168,76,0.15);
+    border-color: var(--gold);
+  }
+  .mem-card.matched { opacity: 0.5; cursor: default; }
+  .mem-card:not(.flipped):not(.matched):hover {
+    border-color: var(--gold-dim);
+    background: rgba(201,168,76,0.12);
+    transform: scale(1.05);
+  }
+  .mem-card-face { display: none; }
+  .mem-card.flipped .mem-card-face,
+  .mem-card.matched .mem-card-face { display: block; }
+  .mem-card-back { display: block; font-size: 0.8rem; color: var(--gold-dim); }
+  .mem-card.flipped .mem-card-back,
+  .mem-card.matched .mem-card-back { display: none; }
+
+  /* ===== GAME 3: SNAKE ===== */
+  #game-snake {
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+  }
+
+  #snake-canvas {
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.4);
+    display: block;
+  }
+
+  .snake-controls {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+  }
+  .snake-score {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .snake-score span { color: var(--gold); font-size: 1.1rem; margin-left: 0.5rem; }
+
+  /* ===== ABOUT ===== */
+  .about-section {
+    background: var(--charcoal);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6rem;
+    align-items: center;
+  }
+
+  @media (max-width: 768px) {
+    .about-section { grid-template-columns: 1fr; gap: 3rem; }
+    nav { padding: 1.2rem 1.5rem; }
+    .nav-links { display: none; }
+    section { padding: 5rem 1.5rem; }
+  }
+
+  .about-img-placeholder {
+    aspect-ratio: 3/4;
+    background: rgba(201,168,76,0.05);
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .about-img-placeholder::before {
+    content: 'AXIOM';
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 8rem;
+    letter-spacing: 0.3em;
+    color: rgba(201,168,76,0.06);
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    white-space: nowrap;
+  }
+
+  .about-corner {
+    position: absolute;
+    width: 30px; height: 30px;
+    border-color: var(--gold-dim);
+    border-style: solid;
+  }
+  .about-corner.tl { top: 12px; left: 12px; border-width: 1px 0 0 1px; }
+  .about-corner.tr { top: 12px; right: 12px; border-width: 1px 1px 0 0; }
+  .about-corner.bl { bottom: 12px; left: 12px; border-width: 0 0 1px 1px; }
+  .about-corner.br { bottom: 12px; right: 12px; border-width: 0 1px 1px 0; }
+
+  .about-body {
+    font-size: 1.05rem;
+    font-weight: 300;
+    color: rgba(245,240,232,0.65);
+    line-height: 2;
+    margin-bottom: 1.5rem;
+  }
+
+  .stat-row {
+    display: flex;
+    gap: 3rem;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border);
+  }
+  .stat-item {}
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 0.05em;
+    color: var(--gold);
+    line-height: 1;
+  }
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 0.25rem;
+  }
+
+  /* ===== CONTACT ===== */
+  .contact-section {
+    background: var(--ink);
+    text-align: center;
+    padding-bottom: 5rem;
+  }
+
+  .contact-email {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 5vw, 4rem);
+    letter-spacing: 0.1em;
+    color: var(--paper);
+    text-decoration: none;
+    border-bottom: 2px solid var(--gold-dim);
+    padding-bottom: 0.2rem;
+    transition: border-color 0.3s, color 0.3s;
+    display: inline-block;
+    margin-top: 2rem;
+  }
+  .contact-email:hover { color: var(--gold); border-color: var(--gold); }
+
+  /* ===== FOOTER ===== */
+  footer {
+    background: var(--charcoal);
+    border-top: 1px solid var(--border);
+    padding: 2rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+  }
+  .footer-copy {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+  }
+
+  /* ===== SCROLL REVEAL ===== */
+  .reveal { opacity: 0; transform: translateY(30px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* ===== GAME OVERLAY MSG ===== */
+  .game-msg {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    margin: 1rem 0;
+    text-align: center;
+    min-height: 2rem;
+  }
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor-dot" id="cursorDot"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="#">AXIOM</a>
+  <ul class="nav-links">
+    <li><a href="#services">Services</a></li>
+    <li><a href="#games">Games</a></li>
+    <li><a href="#about">About</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ul>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-content reveal">
+    <p class="hero-eyebrow">Est. MMXXIV — Digital Atelier</p>
+    <h1 class="hero-title">
+      DESIGN
+      <span>& Innovation</span>
+    </h1>
+    <p class="hero-desc">Where formal precision meets bold creative vision. Crafting experiences that endure.</p>
+    <a href="#services" class="hero-cta">Explore the Work →</a>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marquee-wrapper">
+  <div class="marquee-track" id="marqueeTrack">
+    <span class="marquee-item">Brand Identity</span>
+    <span class="marquee-item">Digital Experiences</span>
+    <span class="marquee-item">Creative Direction</span>
+    <span class="marquee-item">Motion Design</span>
+    <span class="marquee-item">Editorial Design</span>
+    <span class="marquee-item">Web Development</span>
+    <span class="marquee-item">Brand Identity</span>
+    <span class="marquee-item">Digital Experiences</span>
+    <span class="marquee-item">Creative Direction</span>
+    <span class="marquee-item">Motion Design</span>
+    <span class="marquee-item">Editorial Design</span>
+    <span class="marquee-item">Web Development</span>
+  </div>
+</div>
+
+<!-- SERVICES -->
+<section class="services" id="services">
+  <div class="reveal">
+    <p class="section-label">What We Do</p>
+    <h2 class="section-title">Our Disciplines</h2>
+    <div class="gold-line"></div>
+  </div>
+  <div class="services-grid reveal">
+    <div class="service-card">
+      <p class="service-num">01</p>
+      <h3 class="service-name">Brand Strategy</h3>
+      <p class="service-desc">We build identities that possess gravity — systems of thought as much as systems of visual language.</p>
+    </div>
+    <div class="service-card">
+      <p class="service-num">02</p>
+      <h3 class="service-name">Digital Design</h3>
+      <p class="service-desc">Interfaces refined to their essential form. Every pixel carries intention, every interaction carries meaning.</p>
+    </div>
+    <div class="service-card">
+      <p class="service-num">03</p>
+      <h3 class="service-name">Editorial Art</h3>
+      <p class="service-desc">Publications, campaigns, and narratives constructed with the precision of a goldsmith and the vision of a poet.</p>
+    </div>
+    <div class="service-card">
+      <p class="service-num">04</p>
+      <h3 class="service-name">Motion & Film</h3>
+      <p class="service-desc">Time becomes the canvas. We craft moving sequences that linger in memory long after the screen goes dark.</p>
+    </div>
+  </div>
+</section>
+
+<!-- GAMES SECTION -->
+<section class="games-section" id="games">
+  <div class="games-header reveal">
+    <div>
+      <p class="section-label">Interactive Parlour</p>
+      <h2 class="section-title">Amusements</h2>
+      <div class="gold-line"></div>
+    </div>
+    <div class="games-tabs">
+      <button class="game-tab active" onclick="switchGame('type')">Type Racer</button>
+      <button class="game-tab" onclick="switchGame('memory')">Memory</button>
+      <button class="game-tab" onclick="switchGame('snake')">Serpent</button>
+    </div>
+  </div>
+
+  <!-- GAME 1: TYPING -->
+  <div class="games-arena active reveal" id="game-type">
+    <p class="section-label" style="text-align:center; margin-bottom:0.5rem">Type the passage below</p>
+    <div class="type-prompt" id="typePrompt"></div>
+    <input class="type-input" id="typeInput" placeholder="begin typing…" autocomplete="off" spellcheck="false">
+    <div class="type-stats">
+      <div class="stat">WPM <span class="stat-val" id="wpmDisplay">0</span></div>
+      <div class="stat">Accuracy <span class="stat-val" id="accDisplay">100%</span></div>
+      <div class="stat">Time <span class="stat-val" id="timeDisplay">0s</span></div>
+    </div>
+    <div class="game-msg" id="typeMsg"></div>
+    <button class="game-btn" onclick="resetTypeGame()">New Passage</button>
+  </div>
+
+  <!-- GAME 2: MEMORY -->
+  <div class="games-arena" id="game-memory">
+    <div class="memory-info">
+      <div>Moves <span id="memMoves">0</span></div>
+      <div>Pairs <span id="memPairs">0</span> / 8</div>
+      <div>Time <span id="memTime">0s</span></div>
+    </div>
+    <div class="memory-grid" id="memGrid"></div>
+    <div class="game-msg" id="memMsg"></div>
+    <button class="game-btn" onclick="resetMemory()">New Game</button>
+  </div>
+
+  <!-- GAME 3: SNAKE -->
+  <div class="games-arena" id="game-snake">
+    <canvas id="snake-canvas" width="400" height="400"></canvas>
+    <div class="snake-controls">
+      <div class="snake-score">Score <span id="snakeScore">0</span></div>
+      <div class="snake-score">Best <span id="snakeBest">0</span></div>
+      <button class="game-btn" onclick="startSnake()">Start / Restart</button>
+    </div>
+    <p style="font-family:'DM Mono',monospace; font-size:0.6rem; letter-spacing:0.2em; color:var(--muted); margin-top:0.75rem; text-align:center;">Arrow Keys or WASD to move</p>
+  </div>
+</section>
+
+<!-- ABOUT -->
+<section class="about-section" id="about">
+  <div class="about-img-placeholder reveal">
+    <div class="about-corner tl"></div>
+    <div class="about-corner tr"></div>
+    <div class="about-corner bl"></div>
+    <div class="about-corner br"></div>
+  </div>
+  <div class="reveal">
+    <p class="section-label">The Atelier</p>
+    <h2 class="section-title">About Axiom</h2>
+    <div class="gold-line"></div>
+    <p class="about-body">
+      Founded on the belief that great design occupies the space between restraint and audacity, Axiom is a creative studio operating at the intersection of culture, commerce, and craft.
+    </p>
+    <p class="about-body">
+      We partner with ambitious brands and institutions who understand that the finest work requires not only skill, but philosophy — a point of view that persists across every touchpoint.
+    </p>
+    <div class="stat-row">
+      <div class="stat-item">
+        <div class="stat-num">12+</div>
+        <div class="stat-label">Years Active</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">240</div>
+        <div class="stat-label">Projects</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">38</div>
+        <div class="stat-label">Awards</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section class="contact-section" id="contact">
+  <div class="reveal">
+    <p class="section-label">Get in Touch</p>
+    <h2 class="section-title">Begin a Conversation</h2>
+    <div class="gold-line" style="margin: 1.5rem auto;"></div>
+    <p class="about-body" style="max-width:480px; margin: 0 auto 1rem;">Every great collaboration begins with a single exchange. We would be delighted to hear from you.</p>
+    <a href="mailto:hello@axiom.studio" class="contact-email">hello@axiom.studio</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">AXIOM</div>
+  <div class="footer-copy">© 2024 Axiom Studio — All Rights Reserved</div>
+  <div class="footer-copy" style="color:var(--gold-dim);">Mumbai · London · New York</div>
+</footer>
+
+<script>
+// ===== CURSOR =====
+const dot = document.getElementById('cursorDot');
+const ring = document.getElementById('cursorRing');
+document.addEventListener('mousemove', e => {
+  dot.style.left = e.clientX + 'px';
+  dot.style.top = e.clientY + 'px';
+  ring.style.left = e.clientX + 'px';
+  ring.style.top = e.clientY + 'px';
+});
+
+// ===== SCROLL REVEAL =====
+const reveals = document.querySelectorAll('.reveal');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); } });
+}, { threshold: 0.1 });
+reveals.forEach(r => obs.observe(r));
+
+// ===== GAME SWITCHING =====
+function switchGame(id) {
+  document.querySelectorAll('.games-arena').forEach(a => a.classList.remove('active'));
+  document.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('game-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'snake') initSnakeCanvas();
+}
+
+// ========== GAME 1: TYPING ==========
+const passages = [
+  "Design is not just what it looks like and feels like. Design is how it works.",
+  "Simplicity is the ultimate sophistication. Every great design begins with a clear purpose.",
+  "Typography is the craft of endowing human language with a durable visual form.",
+  "Elegance is not a dispensable luxury but a factor that decides between success and failure.",
+  "The details are not the details. They make the design. Everything is design.",
+];
+
+let typeStartTime = null;
+let typeTimer = null;
+let typingActive = false;
+let currentPassage = '';
+
+function renderPassage(passage) {
+  return passage.split('').map((ch, i) => `<span data-i="${i}">${ch}</span>`).join('');
+}
+
+function resetTypeGame() {
+  clearInterval(typeTimer);
+  currentPassage = passages[Math.floor(Math.random() * passages.length)];
+  document.getElementById('typePrompt').innerHTML = `<div class="type-chars">${renderPassage(currentPassage)}</div>`;
+  document.getElementById('typeInput').value = '';
+  document.getElementById('typeInput').disabled = false;
+  document.getElementById('wpmDisplay').textContent = '0';
+  document.getElementById('accDisplay').textContent = '100%';
+  document.getElementById('timeDisplay').textContent = '0s';
+  document.getElementById('typeMsg').textContent = '';
+  typeStartTime = null; typingActive = false;
+}
+
+document.getElementById('typeInput').addEventListener('input', function() {
+  if (!typingActive) {
+    typingActive = true;
+    typeStartTime = Date.now();
+    typeTimer = setInterval(updateTypeStats, 300);
+  }
+  const val = this.value;
+  const spans = document.querySelectorAll('.type-chars span');
+  spans.forEach((span, i) => {
+    span.classList.remove('correct','incorrect','current');
+    if (i < val.length) {
+      span.classList.add(val[i] === currentPassage[i] ? 'correct' : 'incorrect');
+    } else if (i === val.length) {
+      span.classList.add('current');
+    }
+  });
+  if (val.length === currentPassage.length) {
+    clearInterval(typeTimer);
+    updateTypeStats();
+    document.getElementById('typeMsg').textContent = '✦ COMPLETE ✦';
+    this.disabled = true;
+  }
+});
+
+function updateTypeStats() {
+  if (!typeStartTime) return;
+  const elapsed = (Date.now() - typeStartTime) / 1000;
+  document.getElementById('timeDisplay').textContent = Math.floor(elapsed) + 's';
+  const val = document.getElementById('typeInput').value;
+  const wpm = Math.round((val.length / 5) / (elapsed / 60));
+  document.getElementById('wpmDisplay').textContent = wpm;
+  let correct = 0;
+  for (let i = 0; i < val.length; i++) { if (val[i] === currentPassage[i]) correct++; }
+  const acc = val.length ? Math.round((correct / val.length) * 100) : 100;
+  document.getElementById('accDisplay').textContent = acc + '%';
+}
+
+resetTypeGame();
+
+// ========== GAME 2: MEMORY ==========
+const EMOJIS = ['⚔️','🏛️','🎭','🌙','🦅','⚗️','🪙','🎪'];
+let memCards = [], memFlipped = [], memMoves = 0, memPairsFound = 0, memTimerRef = null, memSeconds = 0, memCanFlip = true;
+
+function resetMemory() {
+  clearInterval(memTimerRef);
+  memFlipped = []; memMoves = 0; memPairsFound = 0; memSeconds = 0; memCanFlip = true;
+  document.getElementById('memMoves').textContent = '0';
+  document.getElementById('memPairs').textContent = '0';
+  document.getElementById('memTime').textContent = '0s';
+  document.getElementById('memMsg').textContent = '';
+  const pairs = [...EMOJIS, ...EMOJIS].sort(() => Math.random() - 0.5);
+  const grid = document.getElementById('memGrid');
+  grid.innerHTML = '';
+  memCards = pairs.map((emoji, i) => {
+    const card = document.createElement('div');
+    card.className = 'mem-card';
+    card.dataset.emoji = emoji;
+    card.dataset.idx = i;
+    card.innerHTML = `<span class="mem-card-back">✦</span><span class="mem-card-face">${emoji}</span>`;
+    card.addEventListener('click', flipMemCard);
+    grid.appendChild(card);
+    return card;
+  });
+  memTimerRef = setInterval(() => {
+    memSeconds++;
+    document.getElementById('memTime').textContent = memSeconds + 's';
+  }, 1000);
+}
+
+function flipMemCard() {
+  if (!memCanFlip) return;
+  if (this.classList.contains('flipped') || this.classList.contains('matched')) return;
+  this.classList.add('flipped');
+  memFlipped.push(this);
+  if (memFlipped.length === 2) {
+    memMoves++;
+    document.getElementById('memMoves').textContent = memMoves;
+    memCanFlip = false;
+    setTimeout(checkMemMatch, 600);
+  }
+}
+
+function checkMemMatch() {
+  const [a, b] = memFlipped;
+  if (a.dataset.emoji === b.dataset.emoji) {
+    a.classList.add('matched'); b.classList.add('matched');
+    memPairsFound++;
+    document.getElementById('memPairs').textContent = memPairsFound;
+    if (memPairsFound === 8) {
+      clearInterval(memTimerRef);
+      document.getElementById('memMsg').textContent = `✦ YOU WIN — ${memMoves} moves, ${memSeconds}s ✦`;
+    }
+  } else {
+    a.classList.remove('flipped'); b.classList.remove('flipped');
+  }
+  memFlipped = [];
+  memCanFlip = true;
+}
+
+resetMemory();
+
+// ========== GAME 3: SNAKE ==========
+let snakeGame = null;
+
+function initSnakeCanvas() {
+  const canvas = document.getElementById('snake-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(0, 0, 400, 400);
+  ctx.fillStyle = 'rgba(201,168,76,0.15)';
+  ctx.font = '700 14px "DM Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = '0.2em';
+  ctx.fillText('PRESS START', 200, 200);
+}
+
+function startSnake() {
+  if (snakeGame) { snakeGame.stop(); }
+  snakeGame = new SnakeGame();
+  snakeGame.start();
+}
+
+class SnakeGame {
+  constructor() {
+    this.canvas = document.getElementById('snake-canvas');
+    this.ctx = this.canvas.getContext('2d');
+    this.cell = 20;
+    this.cols = 20; this.rows = 20;
+    this.reset();
+    this.running = false;
+    this.interval = null;
+    this.dir = {x:1, y:0};
+    this.nextDir = {x:1, y:0};
+    this.handleKey = this.handleKey.bind(this);
+    document.addEventListener('keydown', this.handleKey);
+  }
+  reset() {
+    this.snake = [{x:10,y:10},{x:9,y:10},{x:8,y:10}];
+    this.dir = {x:1,y:0};
+    this.nextDir = {x:1,y:0};
+    this.score = 0;
+    this.placeFood();
+  }
+  placeFood() {
+    let pos;
+    do {
+      pos = {x: Math.floor(Math.random()*this.cols), y: Math.floor(Math.random()*this.rows)};
+    } while (this.snake.some(s => s.x===pos.x && s.y===pos.y));
+    this.food = pos;
+  }
+  handleKey(e) {
+    const map = {
+      ArrowUp:{x:0,y:-1}, ArrowDown:{x:0,y:1},
+      ArrowLeft:{x:-1,y:0}, ArrowRight:{x:1,y:0},
+      w:{x:0,y:-1}, s:{x:0,y:1}, a:{x:-1,y:0}, d:{x:1,y:0}
+    };
+    const nd = map[e.key];
+    if (nd) {
+      e.preventDefault();
+      if (nd.x !== -this.dir.x || nd.y !== -this.dir.y) this.nextDir = nd;
+    }
+  }
+  start() {
+    this.running = true;
+    this.interval = setInterval(() => this.tick(), 120);
+  }
+  stop() {
+    this.running = false;
+    clearInterval(this.interval);
+    document.removeEventListener('keydown', this.handleKey);
+  }
+  tick() {
+    this.dir = this.nextDir;
+    const head = {x: this.snake[0].x + this.dir.x, y: this.snake[0].y + this.dir.y};
+    if (head.x < 0 || head.x >= this.cols || head.y < 0 || head.y >= this.rows ||
+        this.snake.some(s => s.x===head.x && s.y===head.y)) {
+      this.gameOver(); return;
+    }
+    this.snake.unshift(head);
+    if (head.x === this.food.x && head.y === this.food.y) {
+      this.score++;
+      document.getElementById('snakeScore').textContent = this.score;
+      const best = parseInt(document.getElementById('snakeBest').textContent) || 0;
+      if (this.score > best) document.getElementById('snakeBest').textContent = this.score;
+      this.placeFood();
+    } else {
+      this.snake.pop();
+    }
+    this.draw();
+  }
+  draw() {
+    const ctx = this.ctx;
+    const c = this.cell;
+    ctx.fillStyle = '#0a0a0a';
+    ctx.fillRect(0,0,400,400);
+
+    // Grid dots
+    ctx.fillStyle = 'rgba(201,168,76,0.05)';
+    for (let x = 0; x < this.cols; x++)
+      for (let y = 0; y < this.rows; y++) {
+        ctx.fillRect(x*c + c/2 - 1, y*c + c/2 - 1, 2, 2);
+      }
+
+    // Food
+    ctx.fillStyle = '#c9a84c';
+    ctx.shadowColor = '#c9a84c';
+    ctx.shadowBlur = 12;
+    ctx.fillRect(this.food.x*c+3, this.food.y*c+3, c-6, c-6);
+    ctx.shadowBlur = 0;
+
+    // Snake
+    this.snake.forEach((seg, i) => {
+      const alpha = 1 - (i / (this.snake.length + 5));
+      ctx.fillStyle = i===0 ? '#e8c97a' : `rgba(201,168,76,${alpha})`;
+      ctx.fillRect(seg.x*c+1, seg.y*c+1, c-2, c-2);
+    });
+  }
+  gameOver() {
+    this.stop();
+    const ctx = this.ctx;
+    ctx.fillStyle = 'rgba(10,10,10,0.75)';
+    ctx.fillRect(0,0,400,400);
+    ctx.fillStyle = '#c9a84c';
+    ctx.font = 'bold 18px "Bebas Neue", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('GAME OVER', 200, 185);
+    ctx.font = '12px "DM Mono", monospace';
+    ctx.fillText('SCORE: ' + this.score, 200, 215);
+  }
+}
+
+initSnakeCanvas();
+</script>
+</body>
 </html>
